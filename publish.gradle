@@ -1,7 +1,7 @@
 apply plugin: 'maven-publish'
 
 task sourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from android.sourceSets.main.java.srcDirs
 }
 
@@ -17,7 +17,7 @@ afterEvaluate {
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
