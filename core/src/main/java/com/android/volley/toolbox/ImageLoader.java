@@ -395,7 +395,9 @@ public class ImageLoader {
                 if (request != null) {
                     request.removeContainerAndCancelIfNecessary(this);
                     if (request.mContainers.size() == 0) {
-                        mBatchedResponses.remove(mCacheKey);
+						synchronize( mBatchedResponses ) {
+							mBatchedResponses.remove(mCacheKey);
+						}
                     }
                 }
             }
@@ -484,7 +486,9 @@ public class ImageLoader {
      * @param request The BatchedImageRequest to be delivered.
      */
     private void batchResponse(String cacheKey, BatchedImageRequest request) {
-        mBatchedResponses.put(cacheKey, request);
+		synchronize( mBatchedResponses ) {
+			mBatchedResponses.put(cacheKey, request);
+		}
         // If we don't already have a batch delivery runnable in flight, make a new one.
         // Note that this will be used to deliver responses to all callers in mBatchedResponses.
         if (mRunnable == null) {
@@ -492,25 +496,29 @@ public class ImageLoader {
                     new Runnable() {
                         @Override
                         public void run() {
-                            for (BatchedImageRequest bir : mBatchedResponses.values()) {
-                                for (ImageContainer container : bir.mContainers) {
-                                    // If one of the callers in the batched request canceled the
-                                    // request
-                                    // after the response was received but before it was delivered,
-                                    // skip them.
-                                    if (container.mListener == null) {
-                                        continue;
-                                    }
-                                    if (bir.getError() == null) {
-                                        container.mBitmap = bir.mResponseBitmap;
-                                        container.mListener.onResponse(container, false);
-                                    } else {
-                                        container.mListener.onErrorResponse(bir.getError());
-                                    }
-                                }
-                            }
-                            mBatchedResponses.clear();
+							ArrayList<BatchedImageRequest> reqs;
+							synchronize( mBatchedResponses ) {
+								reqs = new ArrayList(mBatchedResponses.values());
+								mBatchedResponses.clear();
+							}
                             mRunnable = null;
+							for (BatchedImageRequest bir : reqs) {
+								for (ImageContainer container : bir.mContainers) {
+									// If one of the callers in the batched request canceled the
+									// request
+									// after the response was received but before it was delivered,
+									// skip them.
+									if (container.mListener == null) {
+										continue;
+									}
+									if (bir.getError() == null) {
+										container.mBitmap = bir.mResponseBitmap;
+										container.mListener.onResponse(container, false);
+									} else {
+										container.mListener.onErrorResponse(bir.getError());
+									}
+								}
+							}
                         }
                     };
             // Post the runnable.
