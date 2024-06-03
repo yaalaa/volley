@@ -63,7 +63,7 @@ subprojects {
         options.compilerArgs << "-Xlint:unchecked" << "-Werror"
     }
 
-    if (it.name != 'testing') {
-        apply from: '../publish.gradle'
-    }
+    // if (it.name != 'testing') {
+    //     apply from: '../publish.gradle'
+    // }
 }
